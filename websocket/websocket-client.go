@@ -1,9 +1,11 @@
+/*
+Websocket Client is a utility to connect to btcwallet using websockets
+
+*/
+
 package main
 
 import (
-	"github.com/gorilla/websocket"
-	"github.com/conformal/btcutil"
-	"github.com/monetas/btcws"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -11,10 +13,14 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+
+	"github.com/monetas/btcutil"
+	"github.com/monetas/btcws"
+	"github.com/monetas/websocket"
 )
 
 type T struct {
-	Msg string
+	Msg   string
 	Count int
 }
 
@@ -69,7 +75,7 @@ func main() {
 		}
 
 		m := string(msg)
-		
+
 		log.Println(m)
 	}
 }
