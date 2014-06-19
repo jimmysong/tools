@@ -9,13 +9,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
 
 	"github.com/monetas/btcutil"
-	"github.com/monetas/btcws"
 	"github.com/monetas/websocket"
 )
 
@@ -25,6 +26,15 @@ type T struct {
 }
 
 func main() {
+	// message is the JSON to be sent to the websocket connection
+	flag.Parse()
+	arguments := flag.Args()
+	if len(arguments) != 1 {
+		fmt.Println("Usage: websocket <JSON to send to btcwallet websocket server>")
+		return
+	}
+	message := []byte(arguments[0])
+
 	// get the root cert for connecting to secure websocket
 	btcwalletHomeDir := btcutil.AppDataDir("btcwallet", false)
 	certs, err := ioutil.ReadFile(filepath.Join(btcwalletHomeDir, "rpc.cert"))
@@ -60,12 +70,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Create getdepositscript command.
-	id := 1
-	cmd, err := btcws.NewGetDepositScriptCmd(id)
-
-	// JSON marshal and send request to websocket connection.
-	conn.WriteJSON(cmd)
+	// send message to websocket connection.
+	conn.WriteMessage(websocket.TextMessage, message)
 
 	for {
 		_, msg, err := conn.ReadMessage()
