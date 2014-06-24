@@ -26,14 +26,15 @@ func main() {
 		fmt.Println("Processing", repo)
 		os.Chdir(repo)
 		exec.Command("git", "checkout", "master").Output()
+		exec.Command("git", "pull").Output()
 		exec.Command("git", "fetch", "upstream").Output()
 		out, _ := exec.Command("git", "rebase", "upstream/master").Output()
 		s := string(out)
 		if strings.Contains(s, "CONFLICT") {
-			fmt.Println(file, "needs merging")
+			fmt.Println(file.Name(), "needs merging")
 		} else {
 			fmt.Println("updating monetas repo", file.Name())
-			exec.Command("git", "push", "origin", "HEAD")
+			exec.Command("git", "push", "origin", "HEAD", "-f")
 		}
 	}
 }
