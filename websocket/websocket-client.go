@@ -1,6 +1,9 @@
 /*
 Websocket Client is a utility to connect to btcwallet using websockets
 
+Connects to testnet by default, add the -simnet flag for simnet,
+-mainnet flag for mainnet.
+
 */
 
 package main
@@ -27,7 +30,18 @@ type T struct {
 
 func main() {
 	// message is the JSON to be sent to the websocket connection
+	var simnet bool
+	var mainnet bool
+	flag.BoolVar(&simnet, "simnet", false, "connect to simnet")
+	flag.BoolVar(&mainnet, "mainnet", false, "connect to mainnet")
 	flag.Parse()
+	port := 18332
+	if mainnet {
+		port = 8332
+	} else if simnet {
+		port = 18554
+	}
+
 	arguments := flag.Args()
 	if len(arguments) != 1 {
 		fmt.Println("Usage: websocket <JSON to send to btcwallet websocket server>")
@@ -62,7 +76,7 @@ func main() {
 	requestHeader.Add("Authorization", auth)
 
 	// Dial the connection.
-	url := "wss://localhost:18332/frontend"
+	url := fmt.Sprintf("wss://localhost:%v/frontend", port)
 	conn, resp, err := dialer.Dial(url, requestHeader)
 
 	if err != nil {
