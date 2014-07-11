@@ -76,7 +76,7 @@ func main() {
 	requestHeader.Add("Authorization", auth)
 
 	// Dial the connection.
-	url := fmt.Sprintf("wss://localhost:%v/frontend", port)
+	url := fmt.Sprintf("wss://localhost:%v/ws", port)
 	conn, resp, err := dialer.Dial(url, requestHeader)
 
 	if err != nil {
