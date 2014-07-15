@@ -58,7 +58,7 @@ func main() {
 			fmt.Println("No changes, not updating monetas repo", file.Name())
 		} else {
 			fmt.Println("Updating monetas repo", file.Name())
-			exec.Command("git", "push", "origin", "HEAD", "-f")
+			exec.Command("git", "push", "origin", "+HEAD").Output()
 		}
 	}
 }
