@@ -32,10 +32,12 @@ func main() {
 	// message is the JSON to be sent to the websocket connection
 	var simnet bool
 	var mainnet bool
+	var port int
 	flag.BoolVar(&simnet, "simnet", false, "connect to simnet")
 	flag.BoolVar(&mainnet, "mainnet", false, "connect to mainnet")
+	flag.IntVar(&port, "port", 18332, "specific port to connect to")
 	flag.Parse()
-	port := 18332
+
 	if mainnet {
 		port = 8332
 	} else if simnet {
