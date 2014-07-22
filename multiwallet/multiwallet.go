@@ -1,23 +1,24 @@
 // The multiwallet tool spawns a btcwallet server process for each
-//  series in the voting pool.
+// series in the voting pool.
 
 package main
 
 import (
-	"fmt"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"syscall"
 
 	"github.com/monetas/btcutil"
 )
 
 func main() {
-	// parse which network we're using
+	// Parse which network we're using.
 	var simnet bool
 	var mainnet bool
 	var closewallet bool
@@ -26,43 +27,47 @@ func main() {
 	flag.BoolVar(&closewallet, "closewallet", false, "close wallet processes")
 	flag.Parse()
 
-	// get the root cert for connecting to secure websocket
+	// Get the root cert for connecting to secure websocket.
 	btcwalletHomeDir := btcutil.AppDataDir("btcwallet", false)
 
 	if closewallet {
-		// close all the btcwallet processes
+		// Close all the btcwallet processes.
 		files, _ := ioutil.ReadDir(btcwalletHomeDir)
 		for _, file := range files {
-			i, err := strconv.Atoi(file.Name())
-			if err != nil || i < 8400 {
+			port, err := strconv.Atoi(file.Name())
+			if err != nil || port < 8400 || port > 28409 {
 				continue
 			}
-			// get contents of pid file
+			// Get contents of pid file.
 			pid, err := ioutil.ReadFile(filepath.Join(btcwalletHomeDir, file.Name(), "pid"))
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("closewallet get %v pid: %v\n", port, err)
 				continue
 			}
-			exec.Command("kill", string(pid)).Output()
+			_, err = exec.Command("kill", string(pid)).Output()
+			if err != nil {
+				fmt.Printf("closewallet kill %v: %v\n", port, err)
+			}
 		}
 		return
 	}
 
-	// The starting port used by the btcwallet processes are determined
-	//  as follows:
+	// The starting port used by the btcwallet processes are determined as follows:
 	//  mainnet: 8400
-	//  testnet: 18400
+	//  testnet: 18400 (default)
 	//  simnet : 28400
-	startport := 18400
+	var startport int
 	if mainnet {
 		startport = 8400
 	} else if simnet {
 		startport = 28400
+	} else {
+		startport = 18400
 	}
 
-	// TODO: check if btcd and btcwallet are installed
+	// TODO: check if btcd and btcwallet are installed.
 
-	// start up btcd
+	// Start up btcd.
 	path := os.Getenv("GOPATH")
 	btcd := filepath.Join(path, "bin", "btcd")
 	var cmd *exec.Cmd
@@ -75,21 +80,24 @@ func main() {
 	}
 
 	err := cmd.Start()
-
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("btcd start: %v", err)
 	}
 
-
-	// start up 10 btcwallet processes
+	// Start up 10 btcwallet processes.
 	btcwallet := filepath.Join(path, "bin", "btcwallet")
 	btcctl := filepath.Join(path, "bin", "btcctl")
 	for i := 0; i < 10; i++ {
 		port := startport + i
 		listen := fmt.Sprintf("--rpclisten=127.0.0.1:%v", port)
 		dir := filepath.Join(btcwalletHomeDir, fmt.Sprintf("%v", port))
+		// Directory creation or the pid file creation will fail.
+		err = os.Mkdir(dir, os.ModeDir|0700)
+		if e, ok := err.(*os.PathError); ok && e.Err != syscall.EEXIST {
+			log.Fatalf("home dir creation: %v", err)
+		}
 
-		// check that the right cert files exist
+		// Check that the right cert files exist.
 		cert := filepath.Join(dir, "rpc.cert")
 		key := filepath.Join(dir, "rpc.key")
 		_, err1 := os.Stat(cert)
@@ -105,21 +113,23 @@ func main() {
 		cmd = exec.Command(btcwallet, "--username=user", "--password=pass", listen, datadir)
 		err = cmd.Start()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("%v btcwallet start: %v", port, err)
 		}
 
-		// record the process id
-		file, _ := os.Create(filepath.Join(dir, "pid"))
+		// Record the process id.
+		file, err := os.Create(filepath.Join(dir, "pid"))
+		if err != nil {
+			log.Fatalf("pid file creation: %v", err)
+		}
 		pid := fmt.Sprintf("%v", cmd.Process.Pid)
 		file.WriteString(pid)
 		file.Close()
 
-		// create an encrypted wallet
+		// Create an encrypted wallet.
 		server := fmt.Sprintf("--rpcserver=localhost:%v", port)
-		exec.Command(btcctl, server, "createencryptedwallet", "test").Output()
-		
+		_, err = exec.Command(btcctl, server, "createencryptedwallet", "test").Output()
+		if err != nil {
+			fmt.Printf("createencryptedwallet %v: %v\n", port, err)
+		}
 	}
-	
-	
-
 }
