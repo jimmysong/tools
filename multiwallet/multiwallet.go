@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/monetas/btcutil"
 )
@@ -87,11 +88,23 @@ func startAllWallets(gopath string, startport int, btcwalletHomeDir string) {
 		file.WriteString(pid)
 		file.Close()
 
-		// Create an encrypted wallet.
-		server := fmt.Sprintf("--rpcserver=localhost:%v", port)
-		_, err = exec.Command(btcctl, server, "createencryptedwallet", "test").Output()
-		if err != nil {
-			fmt.Printf("createencryptedwallet %v: %v\n", port, err)
+		net := "testnet"
+		if startport == 28400 {
+			net = "simnet"
+		} else if startport == 8400 {
+			net = "mainnet"
+		}
+		wallet := filepath.Join(dir, net, "wallet.bin")
+		_, err = os.Stat(wallet)
+
+		if os.IsNotExist(err) {
+			time.Sleep(1000 * time.Millisecond)
+			// Create an encrypted wallet.
+			server := fmt.Sprintf("--rpcserver=localhost:%v", port)
+			_, err = exec.Command(btcctl, server, "createencryptedwallet", "test").Output()
+			if err != nil {
+				fmt.Printf("createencryptedwallet %v: %v\n", port, err)
+			}
 		}
 	}
 }
