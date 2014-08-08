@@ -74,7 +74,7 @@ func main() {
 		}
 
 		// see if we actually did anything
-		out, err = exec.Command("git", "diff").Output()
+		out, err = exec.Command("git", "diff", "origin/master").Output()
 		if err != nil {
 			fmt.Println("Error during diff:", err)
 			continue
