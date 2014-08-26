@@ -23,11 +23,15 @@ func ShowUsage() {
 	os.Exit(1)
 }
 
-func GetChild(key *hdkeychain.ExtendedKey, path string) (*hdkeychain.ExtendedKey) {
+func GetChild(key *hdkeychain.ExtendedKey, path string) *hdkeychain.ExtendedKey {
 	pathcomponents := strings.Split(path, "/")
 	current := key
 	for _, pc := range pathcomponents {
-		childnum, _ := strconv.Atoi(pc)
+		childnum, err := strconv.Atoi(pc)
+		if err != nil {
+			fmt.Printf("Illegal path component: %v\n", pc)
+			os.Exit(2)
+		}
 		current, _ = current.Child(uint32(childnum))
 	}
 	return current
