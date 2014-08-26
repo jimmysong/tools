@@ -27,12 +27,32 @@ func GetChild(key *hdkeychain.ExtendedKey, path string) *hdkeychain.ExtendedKey 
 	pathcomponents := strings.Split(path, "/")
 	current := key
 	for _, pc := range pathcomponents {
+		var isHardened bool = false
+		if strings.HasSuffix(pc, "+") {
+			pc = strings.TrimSuffix(pc, "+")
+			isHardened = true
+		}
 		childnum, err := strconv.Atoi(pc)
 		if err != nil {
 			fmt.Printf("Illegal path component: %v\n", pc)
-			os.Exit(2)
+			os.Exit(1)
 		}
-		current, _ = current.Child(uint32(childnum))
+
+		if childnum >= hdkeychain.HardenedKeyStart {
+			fmt.Printf("Number %d not in range [0:2^31-1]\n", childnum)
+			os.Exit(1)
+		}
+
+		childNum32 := uint32(childnum)
+		if isHardened {
+			childNum32 += hdkeychain.HardenedKeyStart
+		}
+
+		current, err = current.Child(childNum32)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 	}
 	return current
 }
