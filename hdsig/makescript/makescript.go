@@ -62,11 +62,12 @@ func GetChild(key *hdkeychain.ExtendedKey, path string) *hdkeychain.ExtendedKey 
 func main() {
 
 	// for creating new keys
-	var path, rawkeys string
+	var path, rawkeys, net string
 	var m int
 	flag.StringVar(&rawkeys, "keys", "", "Public HD Keys to generate a deposit script")
 	flag.IntVar(&m, "num", 1, "Number of keys required to spend")
 	flag.StringVar(&path, "path", "0", "Child key to derive from each hd key")
+	flag.StringVar(&net, "net", "main", "Choice of network: main, test, sim")
 	flag.Parse()
 
 	if rawkeys == "" {
@@ -86,7 +87,15 @@ func main() {
 	var pks []*btcutil.AddressPubKey
 	pks = make([]*btcutil.AddressPubKey, n, n)
 
-	params := btcnet.MainNetParams
+	var params btcnet.Params
+	switch net {
+	case "sim":
+		params = btcnet.SimNetParams
+	case "test":
+		params = btcnet.TestNet3Params
+	case "main":
+		params = btcnet.MainNetParams
+	}
 
 	for i := range keys {
 		child := GetChild(keys[i], path)
